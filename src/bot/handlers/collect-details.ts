@@ -35,16 +35,6 @@ async function generateWarningLetter(ctx: MyContext, caseId: string): Promise<vo
     return;
   }
 
-  // Guard: ensure user has provided their legal details (not just Telegram display name)
-  const { user } = caseRecord;
-  if (!user.firstName || !user.lastName || !user.phone || !user.address) {
-    ctx.session.pendingCaseId = caseId;
-    ctx.session.pendingAction = 'warning';
-    ctx.session.step = 'awaiting_name';
-    await ctx.reply(MESSAGES.ASK_NAME, { reply_markup: cancelKeyboard() });
-    return;
-  }
-
   try {
     const data = buildWarningLetterData({
       user: caseRecord.user,

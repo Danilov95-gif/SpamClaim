@@ -236,7 +236,22 @@ async function handleReminderCallback(
   }
 
   if (action === 'resend') {
-    await triggerDocumentGeneration(ctx, caseId, 'warning');
+    try {
+      const user = await prisma.user.findUnique({ where: { id: ctx.user.id } });
+      const hasDetails = user?.firstName && user?.lastName && user?.phone && user?.address;
+
+      if (!hasDetails) {
+        ctx.session.pendingCaseId = caseId;
+        ctx.session.pendingAction = 'warning';
+        ctx.session.step = 'awaiting_name';
+        await ctx.reply(MESSAGES.ASK_NAME, { reply_markup: cancelKeyboard() });
+      } else {
+        await triggerDocumentGeneration(ctx, caseId, 'warning');
+      }
+    } catch (err) {
+      console.error('[callback] Failed to resend warning:', err);
+      await ctx.reply(MESSAGES.GENERIC_ERROR);
+    }
     return;
   }
 }
