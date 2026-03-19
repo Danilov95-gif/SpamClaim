@@ -5,7 +5,8 @@ import { parseDateFromText } from '../utils/date.js';
 export interface OcrResult {
   text: string;
   phoneNumbers: string[];
-  possibleBusinessName: string | null;
+  possibleBusinessName: string | null; // Sender ID from header
+  advertiserName: string | null;       // Actual advertiser from message body
   detectedDate: Date | null;
   confidence: number;
 }
@@ -17,11 +18,12 @@ const OCR_PROMPT = `אתה מנתח צילומי מסך של הודעות SMS ו
 חלץ מהתמונה:
 1. את כל הטקסט המופיע (כולל טקסט בשורת הכותרת)
 2. מספר הטלפון של **השולח** – חפש קודם בשורת הכותרת/contact header בראש המסך, ואחר כך בגוף ההודעה. המר פורמט בינלאומי (+972 5X-XXXXXXX) לפורמט מקומי (05X-XXXXXXX).
-3. שם העסק השולח (אם מופיע בכותרת או בגוף)
-4. תאריך ושעה (אם מופיעים)
+3. **business** – שם השולח כפי שמופיע בשורת הכותרת (Sender ID אלפאנומרי, למשל "BANK", "DEALS", "HOT" וכו'). אם אין Sender ID, החזר null.
+4. **advertiser** – שם העסק/המפרסם האמיתי שמאחורי ההודעה, כפי שניתן להסיק מגוף ההודעה: שם מותג מפורש, שם חברה, דומיין URL (למשל "direct.co.il" → "ביטוח ישיר"), קישור הסרה, או כל אזכור של גוף מסחרי. אם לא ניתן לזהות, החזר null.
+5. תאריך ושעה (אם מופיעים)
 
 החזר JSON בלבד, ללא markdown, בפורמט:
-{"text":"הטקסט המלא כולל כותרת","phones":["05X-XXXXXXX"],"business":"שם העסק או null","datetime":"2024-01-15T14:30:00 או null"}
+{"text":"הטקסט המלא כולל כותרת","phones":["05X-XXXXXXX"],"business":"Sender ID מהכותרת או null","advertiser":"שם העסק המפרסם מגוף ההודעה או null","datetime":"2024-01-15T14:30:00 או null"}
 
 המספרים ב-phones חייבים להיות בפורמט מקומי ישראלי (05X / 07X / 1-800 / *XXXX וכדומה).`;
 
@@ -29,6 +31,7 @@ interface GeminiOcrResponse {
   text?: string;
   phones?: string[];
   business?: string | null;
+  advertiser?: string | null;
   datetime?: string | null;
 }
 
@@ -62,6 +65,7 @@ export async function performOcr(imageBuffer: Buffer): Promise<OcrResult> {
       text: responseText,
       phoneNumbers: phones,
       possibleBusinessName: null,
+      advertiserName: null,
       detectedDate: null,
       confidence: 0.3,
     };
@@ -89,10 +93,14 @@ export async function performOcr(imageBuffer: Buffer): Promise<OcrResult> {
   const businessName =
     parsed.business && parsed.business !== 'null' ? parsed.business : null;
 
+  const advertiserName =
+    parsed.advertiser && parsed.advertiser !== 'null' ? parsed.advertiser : null;
+
   return {
     text: rawText,
     phoneNumbers: phones.filter(Boolean),
     possibleBusinessName: businessName,
+    advertiserName,
     detectedDate,
     confidence: phones.length > 0 ? 0.9 : 0.5,
   };

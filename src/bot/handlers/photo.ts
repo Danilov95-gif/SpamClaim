@@ -83,9 +83,14 @@ export async function photoHandler(ctx: MyContext): Promise<void> {
         return;
       }
 
-      // 2. Lookup by OCR-detected business name (internal DB + registry)
-      if (ocrResult.possibleBusinessName) {
-        const nameMatches = await lookupBusinessByName(ocrResult.possibleBusinessName);
+      // 2. Lookup by OCR-detected business name (Sender ID header, then advertiser from body)
+      const businessNameCandidates = [
+        ocrResult.possibleBusinessName,
+        ocrResult.advertiserName,
+      ].filter((n): n is string => Boolean(n));
+
+      for (const candidate of businessNameCandidates) {
+        const nameMatches = await lookupBusinessByName(candidate);
 
         if (nameMatches.length > 0) {
           for (const match of nameMatches) {
@@ -125,7 +130,8 @@ export async function photoHandler(ctx: MyContext): Promise<void> {
         },
       });
 
-      const identification = await identifySender(senderName);
+      // If Gemini identified the actual advertiser from the message body, use that for lookup too
+      const identification = await identifySender(ocrResult.advertiserName ?? senderName);
 
       if (!identification.requiresManualReview && identification.best) {
         // High-confidence single match — ask for confirmation
@@ -161,10 +167,12 @@ export async function photoHandler(ctx: MyContext): Promise<void> {
       }
 
       // No match at all — ask user to type the business name manually
+      // Prefer advertiser name from body if available (more useful than raw sender ID)
+      const displayHint = ocrResult.advertiserName ?? senderName;
       ctx.session.pendingCaseId = newCase.id;
       ctx.session.step = 'awaiting_business_name';
       await ctx.reply(
-        `❓ לא הצלחתי לזהות את השולח "${senderName}".\n\nהזן את שם העסק ואנסה לחפש ברשם החברות:`,
+        `❓ לא הצלחתי לזהות את השולח "${displayHint}".\n\nהזן את שם העסק ואנסה לחפש ברשם החברות:`,
         { reply_markup: cancelKeyboard() },
       );
       return;
