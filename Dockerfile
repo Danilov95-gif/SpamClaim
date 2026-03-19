@@ -1,49 +1,43 @@
 # SpamClaim Bot - Dockerfile
-# For deployment to Railway, Fly.io, or any Docker host
+# Uses Debian Bookworm slim (required for Prisma OpenSSL compatibility)
 
-# Build stage
-FROM node:20-alpine AS builder
+# ── Build stage ───────────────────────────────────────────────────────────────
+FROM node:20-bookworm-slim AS builder
 
 WORKDIR /app
 
-# Copy package files
+RUN apt-get update && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
+
 COPY package*.json ./
 COPY prisma ./prisma/
 
-# Install dependencies
 RUN npm ci
 
-# Generate Prisma client
 RUN npx prisma generate
 
-# Copy source code
 COPY . .
 
-# Build TypeScript
-RUN npm run build
+RUN npx tsc
 
-# Production stage
-FROM node:20-alpine AS runner
+# ── Production stage ──────────────────────────────────────────────────────────
+FROM node:20-bookworm-slim AS runner
 
 WORKDIR /app
 
-# Install production dependencies only
-COPY package*.json ./
-RUN npm ci --only=production
+RUN apt-get update && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
 
-# Copy Prisma schema and generate client
+COPY package*.json ./
+RUN npm ci --omit=dev
+
 COPY prisma ./prisma/
 RUN npx prisma generate
 
-# Copy built files
 COPY --from=builder /app/dist ./dist
 
-# Create data directory for SQLite
+# Persistent SQLite directory (mount a Railway volume here for data persistence)
 RUN mkdir -p /app/data
 
-# Set environment
 ENV NODE_ENV=production
 ENV DATABASE_URL="file:/app/data/spamclaim.db"
 
-# Run database migrations on start
 CMD ["sh", "-c", "npx prisma db push && node dist/index.js"]
