@@ -1,0 +1,141 @@
+// SpamClaim Database Schema
+// Run: npx prisma generate && npx prisma db push
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// User - Telegram users of the bot
+// ============================================
+model User {
+  id          String   @id @default(cuid())
+  telegramId  BigInt   @unique
+  firstName   String?
+  lastName    String?
+  phone       String?
+  address     String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  cases       Case[]
+
+  @@index([telegramId])
+}
+
+// ============================================
+// Business - Companies that send spam
+// ============================================
+model Business {
+  id            String   @id @default(cuid())
+  name          String
+  companyNumber String?  @unique  // ח.פ. / ע.מ.
+  address       String?
+  phones        String   @default("[]")  // JSON array of phone numbers
+  emails        String?                   // JSON array of emails
+  spamCount     Int      @default(0)      // How many times reported
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  cases         Case[]
+
+  @@index([companyNumber])
+}
+
+// ============================================
+// Case - Individual spam complaint
+// ============================================
+model Case {
+  id                  String      @id @default(cuid())
+  
+  // Relations
+  userId              String
+  user                User        @relation(fields: [userId], references: [id])
+  businessId          String?
+  business            Business?   @relation(fields: [businessId], references: [id])
+  
+  // Spam message details
+  screenshotFileId    String?     // Telegram file_id
+  ocrText             String?     // Extracted text
+  senderPhone         String?     // Phone that sent spam (if numeric)
+  senderIdRaw         String?     // Alphanumeric Sender ID (if no phone)
+  spamReceivedAt      DateTime?   // When user received the spam
+  
+  // Case status
+  status              String      @default("NEW")
+  
+  // Documents generated
+  warningLetterFileId String?     // Telegram file_id of warning PDF
+  claimFileId         String?     // Telegram file_id of claim PDF
+  claimAmount         Int?        // Amount in ₪
+  
+  // Tracking
+  warningGeneratedAt  DateTime?
+  warningLetterSentAt DateTime?   // User marked as sent
+  responseReceivedAt  DateTime?
+  claimGeneratedAt    DateTime?
+  claimFiledAt        DateTime?
+  resolvedAt          DateTime?
+  
+  // Timestamps
+  createdAt           DateTime    @default(now())
+  updatedAt           DateTime    @updatedAt
+  
+  // Reminders
+  reminders           Reminder[]
+
+  @@index([userId])
+  @@index([status])
+}
+
+// ============================================
+// Reminder - Scheduled notifications
+// ============================================
+model Reminder {
+  id            String        @id @default(cuid())
+  
+  caseId        String
+  case          Case          @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  
+  type          String
+  scheduledFor  DateTime
+  sent          Boolean       @default(false)
+  sentAt        DateTime?
+  snoozedUntil  DateTime?
+  
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  @@index([scheduledFor, sent])
+  @@index([caseId])
+}
+
+// ============================================
+// SenderIdMapping - Cache of alphanumeric SMS Sender ID → Business
+// ============================================
+model SenderIdMapping {
+  id            String   @id @default(cuid())
+  senderId      String   @unique        // Normalized Sender ID (lowercase, no spaces)
+  senderIdRaw   String                  // Original Sender ID as detected
+  businessName  String
+  companyNumber String?
+  address       String?
+  phone         String?
+  category      String?
+  source        String                  // 'manual' | 'known' | 'data_gov' | 'user_reported'
+  confidence    Float    @default(0.5)
+  reportCount   Int      @default(1)
+  verified      Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+// CaseStatus values: NEW, PROCESSING, AWAITING_BUSINESS_ID, AWAITING_USER_DETAILS,
+//   WARNING_GENERATED, WARNING_SENT, AWAITING_RESPONSE, RESPONSE_POSITIVE,
+//   RESPONSE_NEGATIVE, CLAIM_GENERATED, CLAIM_FILED, RESOLVED, CLOSED
+// ReminderType values: WARNING_SEND_CHECK, RESPONSE_CHECK, CLAIM_REMINDER, CUSTOM
