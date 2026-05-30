@@ -37,7 +37,9 @@ export const MESSAGES = {
 /help - העזרה הזו
 
 *שאלות?*
-צור קשר דרך הבוט`,
+צור קשר דרך הבוט
+
+👥 *קהילה:* [IsItSpam? בפייסבוק](https://www.facebook.com/groups/isitspam) — בדוק דיווחים על שולחים ספציפיים`,
 
   // ============================================
   // Photo Processing
@@ -117,6 +119,10 @@ export const MESSAGES = {
     businessAddress: string | null,
     email?: string | null,
     website?: string | null,
+    facebookUrl?: string | null,
+    instagramUrl?: string | null,
+    whatsappPhone?: string | null,
+    linkedinUrl?: string | null,
   ): string => {
     let msg = `📬 *לאן ואיך לשלוח?*\n\n`;
     msg += `*נמען:* ${businessName}\n`;
@@ -131,7 +137,31 @@ export const MESSAGES = {
     }
     msg += `3️⃣ *WhatsApp/SMS* — כגיבוי בלבד, לא מספיק לבד.\n`;
     msg += `\n💡 *טיפ:* שלח בשתי שיטות (דואר + מייל) לביטחון.\n`;
+
+    // Social / direct messaging channels
+    const facebookUsername = facebookUrl?.match(/facebook\.com\/([^/?#]+)/)?.[1];
+    const instagramUsername = instagramUrl?.match(/instagram\.com\/([^/?#]+)/)?.[1];
+    const waLink = whatsappPhone
+      ? `https://wa.me/${whatsappPhone.replace(/\D/g, '')}`
+      : null;
+    const messengerLink = facebookUsername ? `https://m.me/${facebookUsername}` : null;
+    const igDmLink = instagramUsername ? `https://ig.me/m/${instagramUsername}` : null;
+
+    const channels = [
+      messengerLink ? `• [Facebook Messenger](${messengerLink})` : null,
+      igDmLink ? `• [Instagram DM](${igDmLink})` : null,
+      waLink ? `• [WhatsApp Business](${waLink})` : null,
+      linkedinUrl ? `• [LinkedIn](${linkedinUrl})` : null,
+    ].filter((c): c is string => c !== null);
+
+    if (channels.length > 0) {
+      msg += `\n📲 *ערוצי דיגיטל ישירים לפנייה:*\n`;
+      msg += channels.join('\n') + '\n';
+      msg += `_פנייה ישירה מחזקת את הלחץ — שלח בנוסף לשליחה הפורמלית._\n`;
+    }
+
     msg += `\n⏰ *מה הלאה?* לעסק יש *14 יום* להגיב. אחזור אליך לבדוק אם קיבלת תשובה.`;
+    msg += `\n\n👥 *קהילה:* [קבוצת "IsItSpam?"](https://www.facebook.com/groups/isitspam) — בדוק אם אחרים דיווחו על אותו שולח.`;
     return msg;
   },
 
@@ -233,6 +263,7 @@ export const MESSAGES = {
     FILE_CLAIM: '⚖️ כתב תביעה',
     SAVE_FOR_LATER: '📊 שמור למאגר',
     MANUAL_ENTRY: '✏️ הזנה ידנית',
+    ENTER_BUSINESS: '🏢 הזן שם עסק',
     YES_SENT: '✅ כן, שלחתי',
     RESEND_PDF: '📄 שלח שוב את המכתב',
     SNOOZE: '⏸️ תזכיר בעוד 3 ימים',

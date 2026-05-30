@@ -81,6 +81,18 @@ async function generateWarningLetter(ctx: MyContext, caseId: string): Promise<vo
       if (webInfo.companyNumber && !caseRecord.business.companyNumber) {
         updates['companyNumber'] = webInfo.companyNumber;
       }
+      if (webInfo.facebookUrl && !caseRecord.business.facebookUrl) {
+        updates['facebookUrl'] = webInfo.facebookUrl;
+      }
+      if (webInfo.instagramUrl && !caseRecord.business.instagramUrl) {
+        updates['instagramUrl'] = webInfo.instagramUrl;
+      }
+      if (webInfo.whatsappPhone && !caseRecord.business.whatsappPhone) {
+        updates['whatsappPhone'] = webInfo.whatsappPhone;
+      }
+      if (webInfo.linkedinUrl && !caseRecord.business.linkedinUrl) {
+        updates['linkedinUrl'] = webInfo.linkedinUrl;
+      }
 
       if (Object.keys(updates).length > 0) {
         await prisma.business.update({
@@ -93,6 +105,10 @@ async function generateWarningLetter(ctx: MyContext, caseId: string): Promise<vo
     const sendToAddress = webInfo?.legalAddress ?? caseRecord.business?.address ?? null;
     const sendToEmail = webInfo?.email ?? null;
     const sendToWebsite = webInfo?.website ?? null;
+    const sendToFacebook = webInfo?.facebookUrl ?? caseRecord.business?.facebookUrl ?? null;
+    const sendToInstagram = webInfo?.instagramUrl ?? caseRecord.business?.instagramUrl ?? null;
+    const sendToWhatsapp = webInfo?.whatsappPhone ?? caseRecord.business?.whatsappPhone ?? null;
+    const sendToLinkedin = webInfo?.linkedinUrl ?? caseRecord.business?.linkedinUrl ?? null;
 
     await ctx.replyWithDocument(new InputFile(docBuffer, 'warning-letter.docx'), {
       caption: MESSAGES.WARNING_READY,
@@ -105,6 +121,10 @@ async function generateWarningLetter(ctx: MyContext, caseId: string): Promise<vo
         sendToAddress,
         sendToEmail,
         sendToWebsite,
+        sendToFacebook,
+        sendToInstagram,
+        sendToWhatsapp,
+        sendToLinkedin,
       ),
       { parse_mode: 'Markdown' },
     );

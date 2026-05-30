@@ -40,6 +40,10 @@ model Business {
   phones        String   @default("[]")  // JSON array of phone numbers
   emails        String?                   // JSON array of emails
   website       String?                   // Official website URL
+  facebookUrl   String?                   // Facebook page URL
+  instagramUrl  String?                   // Instagram profile URL
+  whatsappPhone String?                   // WhatsApp Business phone number
+  linkedinUrl   String?                   // LinkedIn company page URL
   spamCount     Int      @default(0)      // How many times reported
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt

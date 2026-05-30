@@ -113,10 +113,11 @@ export async function photoHandler(ctx: MyContext): Promise<void> {
         }
       }
 
-      // 3. No business found — show actions without a linked business
+      // 3. No business found — show OCR-detected name if any, and allow manual entry
+      const detectedName = ocrResult.possibleBusinessName ?? ocrResult.advertiserName ?? null;
       await ctx.reply(
-        MESSAGES.OCR_SUCCESS(senderPhone, null, dateStr),
-        { reply_markup: caseActionsKeyboard(newCase.id) },
+        MESSAGES.OCR_SUCCESS(senderPhone, detectedName, dateStr),
+        { reply_markup: caseActionsKeyboard(newCase.id, true) },
       );
       return;
     }

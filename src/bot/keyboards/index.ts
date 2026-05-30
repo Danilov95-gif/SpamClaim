@@ -1,12 +1,16 @@
 import { InlineKeyboard } from 'grammy';
 import { MESSAGES } from '../../templates/messages.js';
 
-export function caseActionsKeyboard(caseId: string): InlineKeyboard {
-  return new InlineKeyboard()
+export function caseActionsKeyboard(caseId: string, showManualBusiness = false): InlineKeyboard {
+  const kb = new InlineKeyboard()
     .text(MESSAGES.BUTTONS.WARNING_LETTER, `action:warning:${caseId}`)
     .text(MESSAGES.BUTTONS.FILE_CLAIM, `action:claim:${caseId}`)
     .row()
     .text(MESSAGES.BUTTONS.SAVE_FOR_LATER, `action:save:${caseId}`);
+  if (showManualBusiness) {
+    kb.row().text(MESSAGES.BUTTONS.ENTER_BUSINESS, `business:manual:${caseId}`);
+  }
+  return kb;
 }
 
 export function cancelKeyboard(): InlineKeyboard {

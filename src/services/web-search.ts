@@ -6,6 +6,11 @@ export interface BusinessWebInfo {
   legalAddress: string | null;
   companyNumber: string | null;
   summary: string | null;
+  facebookUrl: string | null;
+  instagramUrl: string | null;
+  whatsappPhone: string | null;
+  linkedinUrl: string | null;
+  additionalPhones: string | null;
 }
 
 const EMPTY: BusinessWebInfo = {
@@ -14,6 +19,11 @@ const EMPTY: BusinessWebInfo = {
   legalAddress: null,
   companyNumber: null,
   summary: null,
+  facebookUrl: null,
+  instagramUrl: null,
+  whatsappPhone: null,
+  linkedinUrl: null,
+  additionalPhones: null,
 };
 
 function nullIfEmpty(val: unknown): string | null {
@@ -48,9 +58,14 @@ export async function searchBusinessOnWeb(
 3. כתובת פיזית רשמית בישראל
 4. מספר ח.פ. / ע.מ. (אם מוזכר)
 5. תיאור קצר של פעילות העסק (משפט אחד)
+6. דף פייסבוק רשמי של העסק (URL מלא, לא קישור לאדם פרטי)
+7. פרופיל אינסטגרם רשמי של העסק (URL מלא)
+8. מספר WhatsApp Business של העסק (אם קיים)
+9. דף LinkedIn רשמי של העסק (URL מלא)
+10. מספרי טלפון נוספים שמצאת לעסק (מופרדים בפסיק)
 
 החזר JSON בלבד, ללא markdown:
-{"email":"...או null","website":"...או null","legalAddress":"...או null","companyNumber":"...או null","summary":"...או null"}`;
+{"email":"...או null","website":"...או null","legalAddress":"...או null","companyNumber":"...או null","summary":"...או null","facebookUrl":"...או null","instagramUrl":"...או null","whatsappPhone":"...או null","linkedinUrl":"...או null","additionalPhones":"...או null"}`;
 
   try {
     const result = await model.generateContent(prompt);
@@ -69,6 +84,11 @@ export async function searchBusinessOnWeb(
       legalAddress: nullIfEmpty(parsed['legalAddress']),
       companyNumber: nullIfEmpty(parsed['companyNumber']),
       summary: nullIfEmpty(parsed['summary']),
+      facebookUrl: nullIfEmpty(parsed['facebookUrl']),
+      instagramUrl: nullIfEmpty(parsed['instagramUrl']),
+      whatsappPhone: nullIfEmpty(parsed['whatsappPhone']),
+      linkedinUrl: nullIfEmpty(parsed['linkedinUrl']),
+      additionalPhones: nullIfEmpty(parsed['additionalPhones']),
     };
   } catch (err) {
     console.error('[web-search] Failed:', err);

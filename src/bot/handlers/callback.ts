@@ -97,8 +97,17 @@ async function handleActionCallback(
     if (!hasDetails) {
       ctx.session.pendingCaseId = caseId;
       ctx.session.pendingAction = action as 'warning' | 'claim';
-      ctx.session.step = 'awaiting_name';
-      await ctx.reply(MESSAGES.ASK_NAME, { reply_markup: cancelKeyboard() });
+      // Resume from the first missing field — don't restart from the beginning
+      if (!user.firstName || !user.lastName) {
+        ctx.session.step = 'awaiting_name';
+        await ctx.reply(MESSAGES.ASK_NAME, { reply_markup: cancelKeyboard() });
+      } else if (!user.phone) {
+        ctx.session.step = 'awaiting_phone';
+        await ctx.reply(MESSAGES.ASK_PHONE, { reply_markup: cancelKeyboard() });
+      } else {
+        ctx.session.step = 'awaiting_address';
+        await ctx.reply(MESSAGES.ASK_ADDRESS, { reply_markup: cancelKeyboard() });
+      }
       return;
     }
 
@@ -219,11 +228,20 @@ async function handleReminderCallback(
 
     try {
       const user = await prisma.user.findUnique({ where: { id: ctx.user.id } });
-      const hasDetails = user?.firstName && user?.lastName && user?.phone && user?.address;
+      if (!user) { await ctx.reply(MESSAGES.GENERIC_ERROR); return; }
+      const hasDetails = user.firstName && user.lastName && user.phone && user.address;
 
       if (!hasDetails) {
-        ctx.session.step = 'awaiting_name';
-        await ctx.reply(MESSAGES.ASK_NAME, { reply_markup: cancelKeyboard() });
+        if (!user.firstName || !user.lastName) {
+          ctx.session.step = 'awaiting_name';
+          await ctx.reply(MESSAGES.ASK_NAME, { reply_markup: cancelKeyboard() });
+        } else if (!user.phone) {
+          ctx.session.step = 'awaiting_phone';
+          await ctx.reply(MESSAGES.ASK_PHONE, { reply_markup: cancelKeyboard() });
+        } else {
+          ctx.session.step = 'awaiting_address';
+          await ctx.reply(MESSAGES.ASK_ADDRESS, { reply_markup: cancelKeyboard() });
+        }
       } else {
         const name = [user.firstName, user.lastName].filter(Boolean).join(' ');
         await ctx.reply(
@@ -246,13 +264,22 @@ async function handleReminderCallback(
   if (action === 'resend') {
     try {
       const user = await prisma.user.findUnique({ where: { id: ctx.user.id } });
-      const hasDetails = user?.firstName && user?.lastName && user?.phone && user?.address;
+      if (!user) { await ctx.reply(MESSAGES.GENERIC_ERROR); return; }
+      const hasDetails = user.firstName && user.lastName && user.phone && user.address;
 
       if (!hasDetails) {
         ctx.session.pendingCaseId = caseId;
         ctx.session.pendingAction = 'warning';
-        ctx.session.step = 'awaiting_name';
-        await ctx.reply(MESSAGES.ASK_NAME, { reply_markup: cancelKeyboard() });
+        if (!user.firstName || !user.lastName) {
+          ctx.session.step = 'awaiting_name';
+          await ctx.reply(MESSAGES.ASK_NAME, { reply_markup: cancelKeyboard() });
+        } else if (!user.phone) {
+          ctx.session.step = 'awaiting_phone';
+          await ctx.reply(MESSAGES.ASK_PHONE, { reply_markup: cancelKeyboard() });
+        } else {
+          ctx.session.step = 'awaiting_address';
+          await ctx.reply(MESSAGES.ASK_ADDRESS, { reply_markup: cancelKeyboard() });
+        }
       } else {
         await triggerDocumentGeneration(ctx, caseId, 'warning');
       }
