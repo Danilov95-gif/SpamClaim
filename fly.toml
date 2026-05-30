@@ -1,0 +1,21 @@
+# Fly.io configuration for SpamClaim Bot
+# Polling bot — no HTTP service needed
+
+app = "spamclaim-bot"
+primary_region = "ams"
+
+[build]
+
+[env]
+  NODE_ENV = "production"
+  DATABASE_URL = "file:/app/data/spamclaim.db"
+
+# Persistent volume for SQLite database
+[[mounts]]
+  source = "spamclaim_data"
+  destination = "/app/data"
+
+[[vm]]
+  memory = "256mb"
+  cpu_kind = "shared"
+  cpus = 1
