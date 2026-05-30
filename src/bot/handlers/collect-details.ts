@@ -56,8 +56,16 @@ async function generateWarningLetter(ctx: MyContext, caseId: string): Promise<vo
 
     await ctx.replyWithDocument(new InputFile(docBuffer, 'warning-letter.docx'), {
       caption: MESSAGES.WARNING_READY,
-      parse_mode: 'Markdown',
     });
+
+    // Follow-up with actionable next steps and send-to address
+    await ctx.reply(
+      MESSAGES.NEXT_STEPS(
+        caseRecord.business?.name ?? caseRecord.senderPhone ?? 'השולח',
+        caseRecord.business?.address ?? null,
+      ),
+      { parse_mode: 'Markdown' },
+    );
 
     await prisma.case.update({
       where: { id: caseId },

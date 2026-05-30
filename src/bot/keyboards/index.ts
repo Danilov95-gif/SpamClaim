@@ -64,6 +64,13 @@ export function senderCandidatesKeyboard(
   return kb;
 }
 
+export function claimNotAvailableKeyboard(caseId: string): InlineKeyboard {
+  return new InlineKeyboard()
+    .text('📧 כן, צור מכתב התראה', `action:warning:${caseId}`)
+    .row()
+    .text('❌ ביטול', 'cancel');
+}
+
 export function responseCheckKeyboard(caseId: string): InlineKeyboard {
   return new InlineKeyboard()
     .text(MESSAGES.BUTTONS.YES_RESOLVED, `reminder:resolved:${caseId}`)

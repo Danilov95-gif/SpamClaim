@@ -83,10 +83,10 @@ export async function caseViewHandler(ctx: MyContext, caseId: string): Promise<v
 
     const kb = new InlineKeyboard();
 
-    if (OPEN_STATUSES.has(c.status) && c.status !== 'RESOLVED' && c.status !== 'CLOSED') {
-      kb.text('📧 מכתב התראה', `action:warning:${c.id}`)
-        .text('⚖️ כתב תביעה', `action:claim:${c.id}`)
-        .row();
+    if (c.status === 'WARNING_GENERATED' || c.status === 'WARNING_SENT') {
+      kb.text('📄 שלח לי את המכתב שוב', `reminder:resend:${c.id}`).row();
+    } else if (OPEN_STATUSES.has(c.status) && c.status !== 'RESOLVED' && c.status !== 'CLOSED') {
+      kb.text('📧 מכתב התראה', `action:warning:${c.id}`).row();
     }
     if (c.status === 'NEW' || c.status === 'AWAITING_USER_DETAILS') {
       kb.text('📊 שמור למאגר', `action:save:${c.id}`).row();

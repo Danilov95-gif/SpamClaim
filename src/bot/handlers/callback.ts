@@ -1,6 +1,6 @@
 import { MESSAGES } from '../../templates/messages.js';
 import { prisma } from '../../db/index.js';
-import { caseActionsKeyboard, cancelKeyboard, useOrUpdateDetailsKeyboard } from '../keyboards/index.js';
+import { caseActionsKeyboard, cancelKeyboard, claimNotAvailableKeyboard, useOrUpdateDetailsKeyboard } from '../keyboards/index.js';
 import { triggerDocumentGeneration } from './collect-details.js';
 import { caseViewHandler } from './status.js';
 import { confirmSenderIdMapping } from '../../services/sender-identifier.js';
@@ -75,6 +75,14 @@ async function handleActionCallback(
   }
 
   if (action !== 'warning' && action !== 'claim') return;
+
+  if (action === 'claim') {
+    await ctx.reply(MESSAGES.CLAIM_NOT_AVAILABLE, {
+      reply_markup: claimNotAvailableKeyboard(caseId),
+      parse_mode: 'Markdown',
+    });
+    return;
+  }
 
   try {
     // Refresh user from DB to get latest details
