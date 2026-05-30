@@ -1,0 +1,11 @@
+node_modules
+dist
+.env
+*.db
+*.db-journal
+.git
+.gitignore
+fly.toml
+railway.toml
+*.md
+.font-cache
