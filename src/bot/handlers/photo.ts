@@ -1,4 +1,5 @@
 import { MESSAGES } from '../../templates/messages.js';
+import { checkPhotoRateLimit } from '../../utils/rate-limit.js';
 import { prisma } from '../../db/index.js';
 import { performOcr } from '../../services/ocr.js';
 import {
@@ -23,6 +24,11 @@ import type { MyContext } from '../index.js';
 export async function photoHandler(ctx: MyContext): Promise<void> {
   const photos = ctx.message?.photo;
   if (!photos || photos.length === 0) return;
+
+  if (!checkPhotoRateLimit(ctx.user.id)) {
+    await ctx.reply(MESSAGES.PHOTO_RATE_LIMITED);
+    return;
+  }
 
   // Get highest resolution photo (last in array)
   const highResPhoto = photos[photos.length - 1];

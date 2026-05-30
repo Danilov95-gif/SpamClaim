@@ -7,6 +7,7 @@ import { photoHandler } from './bot/handlers/photo.js';
 import { callbackHandler } from './bot/handlers/callback.js';
 import { collectDetailsHandler } from './bot/handlers/collect-details.js';
 import { statusHandler } from './bot/handlers/status.js';
+import { MESSAGES } from './templates/messages.js';
 
 // Auth middleware runs on every update
 bot.use(authMiddleware);
@@ -24,6 +25,23 @@ bot.command('cancel', async (ctx) => {
 
 // Photo / screenshot handler
 bot.on('message:photo', photoHandler);
+
+// Unsupported message types — guide user to send a screenshot
+bot.on(['message:video', 'message:video_note', 'message:animation'], async (ctx) => {
+  await ctx.reply(MESSAGES.UNSUPPORTED_MESSAGE, { parse_mode: 'Markdown' });
+});
+
+bot.on('message:document', async (ctx) => {
+  await ctx.reply(MESSAGES.UNSUPPORTED_MESSAGE, { parse_mode: 'Markdown' });
+});
+
+bot.on(['message:voice', 'message:audio'], async (ctx) => {
+  await ctx.reply(MESSAGES.UNSUPPORTED_MESSAGE, { parse_mode: 'Markdown' });
+});
+
+bot.on(['message:sticker', 'message:location', 'message:contact'], async (ctx) => {
+  await ctx.reply(MESSAGES.UNSUPPORTED_MESSAGE, { parse_mode: 'Markdown' });
+});
 
 // Text handler - routes to collect-details if in a flow, otherwise default hint
 bot.on('message:text', async (ctx) => {

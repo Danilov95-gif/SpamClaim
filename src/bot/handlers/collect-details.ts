@@ -4,6 +4,7 @@ import { buildWarningLetterData } from '../../templates/warning-letter.js';
 import { prisma } from '../../db/index.js';
 import { generateWarningLetterDocx } from '../../services/document.js';
 import { isIsraeliPhone, formatIsraeliPhone } from '../../utils/phone.js';
+import { checkDocRateLimit } from '../../utils/rate-limit.js';
 import { cancelKeyboard, caseActionsKeyboard } from '../keyboards/index.js';
 import type { MyContext } from '../index.js';
 
@@ -13,6 +14,11 @@ export async function triggerDocumentGeneration(
   caseId: string,
   action: 'warning' | 'claim',
 ): Promise<void> {
+  if (!checkDocRateLimit(ctx.user.id)) {
+    await ctx.reply(MESSAGES.DOC_RATE_LIMITED);
+    return;
+  }
+
   if (action === 'warning') {
     await generateWarningLetter(ctx, caseId);
   } else {
