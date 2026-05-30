@@ -5,6 +5,7 @@ import { prisma } from '../../db/index.js';
 import { generateWarningLetterDocx } from '../../services/document.js';
 import { isIsraeliPhone, formatIsraeliPhone } from '../../utils/phone.js';
 import { checkDocRateLimit } from '../../utils/rate-limit.js';
+import { searchBusinessOnWeb } from '../../services/web-search.js';
 import { cancelKeyboard, caseActionsKeyboard } from '../keyboards/index.js';
 import type { MyContext } from '../index.js';
 
@@ -52,7 +53,46 @@ async function generateWarningLetter(ctx: MyContext, caseId: string): Promise<vo
       },
     });
 
-    const docBuffer = await generateWarningLetterDocx(data);
+    // Run document generation and web search in parallel
+    const businessName = caseRecord.business?.name ?? null;
+    const [docBuffer, webInfo] = await Promise.all([
+      generateWarningLetterDocx(data),
+      businessName
+        ? searchBusinessOnWeb(businessName, caseRecord.senderPhone)
+        : Promise.resolve(null),
+    ]);
+
+    // Persist any newly found contact details back to the business record
+    if (webInfo && caseRecord.business) {
+      const updates: Record<string, string> = {};
+
+      if (webInfo.email) {
+        const existing: string[] = JSON.parse(caseRecord.business.emails ?? '[]') as string[];
+        if (!existing.includes(webInfo.email)) {
+          updates['emails'] = JSON.stringify([...existing, webInfo.email]);
+        }
+      }
+      if (webInfo.website && !caseRecord.business.website) {
+        updates['website'] = webInfo.website;
+      }
+      if (webInfo.legalAddress && !caseRecord.business.address) {
+        updates['address'] = webInfo.legalAddress;
+      }
+      if (webInfo.companyNumber && !caseRecord.business.companyNumber) {
+        updates['companyNumber'] = webInfo.companyNumber;
+      }
+
+      if (Object.keys(updates).length > 0) {
+        await prisma.business.update({
+          where: { id: caseRecord.business.id },
+          data: updates,
+        });
+      }
+    }
+
+    const sendToAddress = webInfo?.legalAddress ?? caseRecord.business?.address ?? null;
+    const sendToEmail = webInfo?.email ?? null;
+    const sendToWebsite = webInfo?.website ?? null;
 
     await ctx.replyWithDocument(new InputFile(docBuffer, 'warning-letter.docx'), {
       caption: MESSAGES.WARNING_READY,
@@ -62,7 +102,9 @@ async function generateWarningLetter(ctx: MyContext, caseId: string): Promise<vo
     await ctx.reply(
       MESSAGES.NEXT_STEPS(
         caseRecord.business?.name ?? caseRecord.senderPhone ?? 'השולח',
-        caseRecord.business?.address ?? null,
+        sendToAddress,
+        sendToEmail,
+        sendToWebsite,
       ),
       { parse_mode: 'Markdown' },
     );

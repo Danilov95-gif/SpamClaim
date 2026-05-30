@@ -112,13 +112,23 @@ export const MESSAGES = {
 
   WARNING_READY: `📄 מכתב ההתראה מוכן! קרא את ההוראות למטה.`,
 
-  NEXT_STEPS: (businessName: string, businessAddress: string | null): string => {
+  NEXT_STEPS: (
+    businessName: string,
+    businessAddress: string | null,
+    email?: string | null,
+    website?: string | null,
+  ): string => {
     let msg = `📬 *לאן ואיך לשלוח?*\n\n`;
     msg += `*נמען:* ${businessName}\n`;
     if (businessAddress) msg += `*כתובת:* ${businessAddress}\n`;
+    if (website) msg += `*אתר:* ${website}\n`;
     msg += `\n*שיטות שליחה — לפי עדיפות:*\n`;
     msg += `1️⃣ *דואר רשום עם אישור מסירה* — הכי חזק משפטית. עולה ~20₪ בדואר.\n`;
-    msg += `2️⃣ *מייל לכתובת הרשמית של החברה* — צלם מסך של אישור השליחה.\n`;
+    if (email) {
+      msg += `2️⃣ *מייל ל-${email}* — צלם מסך של אישור השליחה.\n`;
+    } else {
+      msg += `2️⃣ *מייל לכתובת הרשמית של החברה* — חפש באתר שלהם.\n`;
+    }
     msg += `3️⃣ *WhatsApp/SMS* — כגיבוי בלבד, לא מספיק לבד.\n`;
     msg += `\n💡 *טיפ:* שלח בשתי שיטות (דואר + מייל) לביטחון.\n`;
     msg += `\n⏰ *מה הלאה?* לעסק יש *14 יום* להגיב. אחזור אליך לבדוק אם קיבלת תשובה.`;
